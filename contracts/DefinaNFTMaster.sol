@@ -128,4 +128,8 @@ contract DefinaNFTMaster is Ownable, ERC721Holder, Initializable, Pausable {
             IERC721(tokenAddress).safeTransferFrom(address(this), receivedAddress, tokenId);
         }
     }
+
+    function changeTokenAddress(IERC721Enumerable nft_) onlyOwner external {
+        nftToken = nft_;
+    }
 }

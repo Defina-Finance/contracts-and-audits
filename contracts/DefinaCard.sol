@@ -131,11 +131,14 @@ contract DefinaCard721 is ERC721Enumerable, ERC721URIStorage, Initializable {
         });
     }
 
-    function updateCard(string memory name_, uint cardId_, uint maxAmount_, string memory cardURI_) external onlyAdmin {
+    function updateCard(string memory name_, uint cardId_, uint camp_, uint rarity_,
+        uint maxAmount_, string memory cardURI_) external onlyAdmin {
         require(cardId_ != 0 && cardInfoes[cardId_].cardId != 0, "ERC721: wrong cardId");
         require(maxAmount_ > cardInfoes[cardId_].currentAmount, "ERC721: maxAmount less than current amount");
 
         cardInfoes[cardId_].name = name_;
+        cardInfoes[cardId_].camp = camp_;
+        cardInfoes[cardId_].rarity = rarity_;
         cardInfoes[cardId_].maxAmount = maxAmount_;
         cardInfoes[cardId_].cardURI = cardURI_;
     }

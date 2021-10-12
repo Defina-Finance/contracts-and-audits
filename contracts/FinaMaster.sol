@@ -42,10 +42,9 @@ contract FinaMaster is Ownable, Initializable {
         require(recipients_.length > 0, "The length is 0");
         for(uint i = 0; i < recipients_.length; i++){
             require(recipients_[i] != address(0));
-            finaToken.safeTransferFrom(address(this),recipients_[i], amount_[i]);
+            finaToken.safeTransfer(recipients_[i], amount_[i]);
             emit Withdraw(recipients_[i], amount_[i]);
         }
-
     }
 
     /*
