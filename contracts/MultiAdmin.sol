@@ -199,6 +199,13 @@ contract MultiAdmin is Pausable {
         require(proposedSuperAdmins.contains(_msgSender()), "msg sender is not a proposed superAdmin");
         require(totalSuperVotes[superAdmin_] >= 3,"votes not reached majority");
         superAdmin = superAdmin_;
+        //reset superAdmin votes so that if a new superAdmin is
+        //appointed, this superAdmin is no longer in force.
+        for (uint i = 0; i < proposedSuperAdmins.length(); i++){
+            totalSuperVotes[proposedSuperAdmins.at(i)] = 0;
+            for (uint j = 0; j < admins.length(); j++){
+                superAdminVotes[proposedSuperAdmins.at(i)][admins.at(j)] = 0;}
+        }
     }
 
     /**
