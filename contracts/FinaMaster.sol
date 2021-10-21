@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.4;
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
-contract FinaMaster is Ownable, Initializable {
-    using Address for address;
-    using SafeERC20 for IERC20;
+contract FinaMaster is Initializable, OwnableUpgradeable {
+    using AddressUpgradeable for address;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    IERC20 public finaToken;
+    IERC20Upgradeable public finaToken;
 
     event Deposited(address who, uint amount);
     event Withdraw(address who, uint amount);
@@ -27,13 +27,14 @@ contract FinaMaster is Ownable, Initializable {
         emit Deposited(_msgSender(),amount_);
     }
 
-    function initialize(IERC20 token_) onlyOwner external initializer {
+    function initialize(IERC20Upgradeable token_) virtual external initializer {
+        __Ownable_init();
         require(address(token_) != address(0));
         finaToken = token_;
     }
 
-    function setFinaAddress(IERC20 token_) onlyOwner external {
-        require(token_ != IERC20(address(0)), "The address of token is null");
+    function setFinaAddress(IERC20Upgradeable token_) onlyOwner external {
+        require(token_ != IERC20Upgradeable (address(0)), "The address of token is null");
         finaToken = token_;
     }
 
@@ -54,7 +55,7 @@ contract FinaMaster is Ownable, Initializable {
         if (tokenAddress_ == address(0)) {
             payable(_msgSender()).transfer(address(this).balance);
         } else {
-            IERC20 token = IERC20(tokenAddress_);
+            IERC20Upgradeable token = IERC20Upgradeable (tokenAddress_);
             token.transfer(_msgSender(), token.balanceOf(address(this)));
         }
     }
