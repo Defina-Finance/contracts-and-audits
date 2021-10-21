@@ -24,8 +24,8 @@ contract FinaLockFarming is Initializable, OwnableUpgradeable, FinaFarming {
     function initialize(IERC20Upgradeable finaToken_, IERC20Upgradeable secondToken_, address devAddr_,
         uint rewardPerBlock_, uint startBlock_) external virtual override initializer {
         __FinaFarming_init(finaToken_, secondToken_, devAddr_, rewardPerBlock_, startBlock_);
-        depositTier = [30 days, 60 days, 90 days, 120 days];
-        rewardRatioByTier = [1000, 2000, 4000, 7500];
+        depositTier = [0, 30 days, 60 days, 90 days, 120 days, 180 days];
+        rewardRatioByTier = [0, 1000, 2000, 4000, 7500, 10000];
     }
 
     function depositLP(uint _pid, uint _amount) external virtual override onlyEOA whenNotPaused {
