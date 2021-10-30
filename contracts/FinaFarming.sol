@@ -81,10 +81,11 @@ contract FinaFarming is Initializable, OwnableUpgradeable, PausableUpgradeable {
         updateLPAllocPoint();
     }
 
-    function resetLPPool(uint pid_, IERC20Upgradeable lpToken_, uint allocPoint_, uint lastRewardBlock_) onlyOwner external {
+    function resetLPPool(uint pid_, IERC20Upgradeable lpToken_, uint allocPoint_, uint lastRewardBlock_, uint accRewardPerShare_) onlyOwner external {
         lpPoolInfo[pid_].lpToken = lpToken_;
         lpPoolInfo[pid_].allocPoint = allocPoint_;
         lpPoolInfo[pid_].lastRewardBlock = lastRewardBlock_;
+        lpPoolInfo[pid_].accRewardPerShare = accRewardPerShare_;
         updateLPAllocPoint();
     }
 
@@ -198,6 +199,12 @@ contract FinaFarming is Initializable, OwnableUpgradeable, PausableUpgradeable {
      * @dev Pull out all balance of token or BNB in this contract. When tokenAddress_ is 0x0, will transfer all BNB to the admin owner.
      */
     function pullFunds(address tokenAddress_) onlyOwner external {
+        LPPoolInfo storage lp1 = lpPoolInfo[0];
+        LPPoolInfo storage lp2 = lpPoolInfo[1];
+        LPPoolInfo storage lp3 = lpPoolInfo[2];
+        require(tokenAddress_ != address(lp1.lpToken));
+        require(tokenAddress_ != address(lp2.lpToken));
+        require(tokenAddress_ != address(lp3.lpToken));
         if (tokenAddress_ == address(0)) {
             payable(_msgSender()).transfer(address(this).balance);
         } else {

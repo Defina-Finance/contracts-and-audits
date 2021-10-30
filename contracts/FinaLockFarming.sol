@@ -24,8 +24,8 @@ contract FinaLockFarming is Initializable, OwnableUpgradeable, FinaFarming {
     function initialize(IERC20Upgradeable finaToken_, IERC20Upgradeable secondToken_, address devAddr_,
         uint rewardPerBlock_, uint startBlock_) external virtual override initializer {
         __FinaFarming_init(finaToken_, secondToken_, devAddr_, rewardPerBlock_, startBlock_);
-        depositTier = [0, 30 days, 60 days, 90 days, 120 days, 180 days];
-        rewardRatioByTier = [0, 1000, 2000, 4000, 7500, 10000];
+        depositTier = [0, 7 days, 14 days, 21 days, 28 days];
+        rewardRatioByTier = [0, 1500, 4000, 6500, 10000];
     }
 
     function depositLP(uint _pid, uint _amount) external virtual override onlyEOA whenNotPaused {
@@ -109,7 +109,7 @@ contract FinaLockFarming is Initializable, OwnableUpgradeable, FinaFarming {
             lpPool.lpToken.safeTransfer(address(_msgSender()), _amount);
             if(_amount < user.amount) {
                 //if not all withdrawn, update averageDepositedTime
-                user.averageDepositedTime = (user.averageDepositedTime * user.amount - _amount * block.timestamp) / (user.amount - _amount);
+                user.averageDepositedTime = block.timestamp;
             }
             user.amount = user.amount - _amount;
         } else {
@@ -132,7 +132,8 @@ contract FinaLockFarming is Initializable, OwnableUpgradeable, FinaFarming {
         //no need to calculate rewards in emergency
         updateLPPool(_pid);
         lpPool.lpToken.safeTransfer(address(_msgSender()), user.amount);
-        user.rewardDebt = user.amount * lpPool.accRewardPerShare / 1e12;
+        user.amount = 0;
+        user.rewardDebt = 0;
         emit Withdraw(_msgSender(), _pid, user.amount);
     }
 
