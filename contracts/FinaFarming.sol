@@ -62,6 +62,8 @@ contract FinaFarming is Initializable, OwnableUpgradeable, PausableUpgradeable {
         __Pausable_init_unchained();
         require(address(finaToken_) != address(0),"finaToken_ address is null");
         require(address(secondToken_) != address(0),"secondToken_ address is null");
+        require(address(devAddr_) != address(0),"devAddr_ address is null");
+        require(rewardPerBlock_ > 0,"rewardPerBlock_ is zero");
         finaToken = finaToken_;
         secondRewardToken = secondToken_;
         devAddr = devAddr_;
@@ -72,32 +74,22 @@ contract FinaFarming is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     function addLPPool(IERC20Upgradeable lpToken_, uint allocPoint_, uint lastRewardBlock_) onlyOwner external {
         require(address(lpToken_) != address(0),"lpToken_ address is null");
+        require(allocPoint_ > 0, "allocPoint_ is zero");
         lpPoolInfo.push(LPPoolInfo({
             lpToken: lpToken_,
             allocPoint: allocPoint_,
             lastRewardBlock: lastRewardBlock_,
             accRewardPerShare: 0
         }));
-        updateLPAllocPoint();
+        totalLPAllocPoint += allocPoint_;
     }
 
     function resetLPPool(uint pid_, IERC20Upgradeable lpToken_, uint allocPoint_, uint lastRewardBlock_, uint accRewardPerShare_) onlyOwner external {
+        totalLPAllocPoint = totalLPAllocPoint + allocPoint_ - lpPoolInfo[pid_].allocPoint;
         lpPoolInfo[pid_].lpToken = lpToken_;
         lpPoolInfo[pid_].allocPoint = allocPoint_;
         lpPoolInfo[pid_].lastRewardBlock = lastRewardBlock_;
         lpPoolInfo[pid_].accRewardPerShare = accRewardPerShare_;
-        updateLPAllocPoint();
-    }
-
-    function updateLPAllocPoint() internal {
-        uint length = lpPoolInfo.length;
-        uint points = 0;
-        for (uint pid = 0; pid < length; pid++) {
-            points = points + lpPoolInfo[pid].allocPoint;
-        }
-        if (points != 0) {
-            totalLPAllocPoint = points;
-        }
     }
 
     function depositLP(uint _pid, uint _amount) external virtual onlyEOA whenNotPaused {
@@ -123,6 +115,7 @@ contract FinaFarming is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
     //update pool info
     function updateLPPool(uint _pid) public whenNotPaused {
+        require(totalLPAllocPoint > 0, "totalLPAllocPoint is zero");
         LPPoolInfo storage lpPool = lpPoolInfo[_pid];
         if (block.number <= lpPool.lastRewardBlock) { return;}
         uint lpSupply = lpPool.lpToken.balanceOf(address(this));
