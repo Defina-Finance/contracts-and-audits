@@ -28,6 +28,9 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
     IERC721EnumerableUpgradeable public nftToken;
     mapping(address => EnumerableSetUpgradeable.UintSet) private tokensByAddr;
 
+    mapping(uint => uint) public tokenByTimestamp;
+    uint public lockTime;
+
     modifier onlyEOA() {
         require(msg.sender == tx.origin, "DefinaNFTMaster: not eoa");
         _;
@@ -40,12 +43,14 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
         __Pausable_init_unchained();
         __ERC721Holder_init_unchained();
         nftToken = nft_;
+        lockTime = 86400; //initial lock time set to 24 hours
     }
 
     function stake(uint tokenId_) public onlyEOA whenNotPaused {
         require(nftToken.ownerOf(tokenId_) == _msgSender(), "tokenId are not owned by the caller");
         nftToken.safeTransferFrom(_msgSender(), address(this), tokenId_);
         stakeMap.set(tokenId_, _msgSender());
+        tokenByTimestamp[tokenId_] = block.timestamp;
         tokensByAddr[_msgSender()].add(tokenId_);
         emit NFTStaked(_msgSender(), tokenId_);
     }
@@ -61,7 +66,9 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
         require(nftToken.ownerOf(tokenId_) == address(this), "tokenId is not owned by the contract");
         require(stakeMap.contains(tokenId_), "tokenId was not staked");
         require(stakeMap.get(tokenId_) == _msgSender(), "the tokenId was not staked by the caller");
+        require(tokenByTimestamp[tokenId_] + lockTime <= block.timestamp, "the token was not staked for 24 hours");
         stakeMap.remove(tokenId_);
+        delete tokenByTimestamp[tokenId_];
         tokensByAddr[_msgSender()].remove(tokenId_);
         nftToken.safeTransferFrom(address(this), _msgSender(), tokenId_);
         emit NFTWithdraw(_msgSender(), tokenId_);
@@ -128,5 +135,9 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
 
     function changeTokenAddress(IERC721EnumerableUpgradeable nft_) onlyOwner external {
         nftToken = nft_;
+    }
+
+    function changeLockTime(uint seconds_) onlyOwner external {
+        lockTime = seconds_;
     }
 }
