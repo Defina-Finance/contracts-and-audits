@@ -69,6 +69,9 @@ Initializable
     EnumerableSet.UintSet private cardIds;
     mapping (uint => uint) public nftIdtoCardId;
 
+    uint public totalBlindBoxQuota;
+    uint public totalBlindBoxSold;
+
     EnumerableSet.AddressSet private whiteList;
     mapping (address => uint) public whitelistBuyingHistory;
     bool public whiteListOnly;
@@ -127,11 +130,14 @@ Initializable
             delete cardsQuota[cardId];
             cardIds.remove(cardId);
         }
+        totalBlindBoxQuota = 0;
+        totalBlindBoxSold = 0;
         for (uint i = 0; i < cardIds_.length; i++) {
             require(cardIds_[i] != 0);
             require(cardsNum_[i] != 0);
             cardsQuota[cardIds_[i]] = cardsNum_[i];
             cardIds.add(cardIds_[i]);
+            totalBlindBoxQuota += cardsNum_[i];
         }
     }
 
@@ -247,6 +253,9 @@ Initializable
 
     function mintMulti(uint amount) whenNotPaused onlyEOA external {
         require(amount > 0, "BlindBox: missing amount");
+        totalBlindBoxSold += amount;
+        require(totalBlindBoxSold <= totalBlindBoxQuota, "BindBox: exceeded total blind box buyable quota.");
+
         if (whiteListOnly) {
             require(whiteList.contains(_msgSender()),"only whitelist allowed");
             require(whitelistBuyingHistory[_msgSender()] + amount <= whiteListBuyableQuota,"Out of whitelist quota");
