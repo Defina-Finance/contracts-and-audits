@@ -116,6 +116,7 @@ Initializable
             require(cardsNum_[i] != 0);
             cardsQuota[cardIds_[i]] = cardsNum_[i];
             cardIds.add(cardIds_[i]);
+            totalBlindBoxQuota += cardsNum_[i];
         }
     }
 
