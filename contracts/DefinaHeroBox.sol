@@ -33,7 +33,7 @@ interface IDefinaCard{
  *  - a pauser role that allows to stop all token transfers
  *  - token ID and URI autogeneration
  */
-contract BlindBoxV2 is
+contract DefinaHeroBox is
 Context,
 AccessControlEnumerable,
 ERC721Enumerable,
@@ -58,13 +58,11 @@ Initializable
     event Mint(address _to, uint tokenid_);
     event MintMulti(address indexed _to, uint _amount);
     event Open(uint indexed cardId_, uint indexed nftId_);
-    event SetMaxMintAmount(uint _new);
 
     Counters.Counter private _tokenIdTracker;
     IERC20 public currToken;
     uint public nftPrice;
     address public tokenReceiveAddress;
-    uint public maxMintAmount;
     mapping (uint => uint) public cardsQuota;
     EnumerableSet.UintSet private cardIds;
     mapping (uint => uint) public nftIdtoCardId;
@@ -85,7 +83,7 @@ Initializable
     IDefinaCard public nftToken;
 
     modifier onlyEOA() {
-        require(msg.sender == tx.origin, "ForceNFTMarket: not eoa");
+        require(msg.sender == tx.origin, "Blindbox: not eoa");
         _;
     }
 
@@ -93,7 +91,7 @@ Initializable
      * @dev Grants `DEFAULT_ADMIN_ROLE` and `PAUSER_ROLE` to the
      * account that deploys the contract.
      */
-    constructor() ERC721("Defina Blind Box", "DEFINABOX") {
+    constructor() ERC721("Defina Hero Box", "HEROBOX") {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(PAUSER_ROLE, _msgSender());
         _setupRole(ADMIN_ROLE, _msgSender());
@@ -277,7 +275,7 @@ Initializable
         emit MintMulti(_msgSender(), amount);
     }
 
-    function open(uint tokenId) whenNotPaused public {
+    function open(uint tokenId) whenNotPaused onlyEOA external {
         require(_isApprovedOrOwner(_msgSender(), tokenId), "BlindBox: caller is not owner nor approved");
         burn(tokenId);
         uint index = _randModulus(cardIds.length());

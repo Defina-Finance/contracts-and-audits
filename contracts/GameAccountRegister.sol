@@ -14,10 +14,10 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
     mapping (bytes32 => address) private emails;
     mapping (bytes32 => address) private delegatedEmails;
 
-    event Binding(address user, bytes32 account);
-    event UnBinding(address user);
-    event Delegated(address user, bytes32 delegatedAccount);
-    event UnDelegated(address user, bytes32 delegatedAccount);
+    event Binding(address indexed user, bytes32 account);
+    event UnBinding(address indexed user);
+    event Delegated(address indexed user, bytes32 delegatedAccount);
+    event UnDelegated(address indexed user, bytes32 delegatedAccount);
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
@@ -30,9 +30,9 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
         _setupRole(ADMIN_ROLE, _msgSender());
     }
 
-    function bindAccount(string memory _email) external {
-        require(bytes(_email).length > 0);
-        bytes32 emailHash = _calcEmailHash(_email);
+    function bindAccount(string memory email_) external {
+        require(bytes(email_).length > 0);
+        bytes32 emailHash = _calcEmailHash(email_);
         bytes32 previousEmailHash = accounts[_msgSender()];
         if (previousEmailHash != 0) {
             delete emails[previousEmailHash];
@@ -61,6 +61,7 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
     function undelegateAccount(string memory email_) external {
         require(bytes(email_).length > 0);
         bytes32 emailHash = _calcEmailHash(email_);
+        require(emailHash == delegatedAccounts[_msgSender()],"The email was not registered as the delegated account");
         require(delegatedEmails[emailHash] != address(0), "The email was not registered as delegated account");
         delete delegatedAccounts[_msgSender()];
         delete delegatedEmails[emailHash];
@@ -97,7 +98,7 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
 
     function _calcEmailHash(string memory email_) internal pure returns(bytes32) {
         require(bytes(email_).length > 0);
-        return keccak256(abi.encode(email_));
+        return keccak256(abi.encode(lower(email_)));
     }
 
     /*
@@ -112,4 +113,18 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
         }
     }
 
+    function lower(string memory _base) internal pure returns (string memory) {
+        bytes memory _baseBytes = bytes(_base);
+        for (uint i = 0; i < _baseBytes.length; i++) {
+            _baseBytes[i] = _lower(_baseBytes[i]);
+        }
+        return string(_baseBytes);
+    }
+
+    function _lower(bytes1 _b1) private pure returns (bytes1) {
+        if (_b1 >= 0x41 && _b1 <= 0x5A) {
+            return bytes1(uint8(_b1) + 32);
+        }
+        return _b1;
+    }
 }

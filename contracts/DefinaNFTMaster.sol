@@ -3,7 +3,6 @@ pragma solidity 0.8.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -14,15 +13,23 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableMapUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 
+interface IDefinaCard{
+    function burn(uint tokenId_) external returns (bool);
+}
 
-contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeable, ERC721HolderUpgradeable {
+contract DefinaNFTMaster is Initializable, AccessControlEnumerableUpgradeable,
+PausableUpgradeable, ERC721HolderUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using EnumerableMapUpgradeable for EnumerableMapUpgradeable.UintToAddressMap;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
     event NFTWithdraw(address indexed _who, uint indexed _tokenId);
     event NFTStaked(address indexed _who, uint indexed tokenId);
+    event NFTBurned(address indexed _tokenAddres, uint indexed tokenId);
+
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     EnumerableMapUpgradeable.UintToAddressMap private stakeMap;
     IERC721EnumerableUpgradeable public nftToken;
@@ -39,11 +46,13 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
     constructor() {}
 
     function initialize(IERC721EnumerableUpgradeable nft_) external initializer {
-        __Ownable_init();
+        __AccessControlEnumerable_init();
         __Pausable_init_unchained();
         __ERC721Holder_init_unchained();
         nftToken = nft_;
         lockTime = 86400; //initial lock time set to 24 hours
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(ADMIN_ROLE, _msgSender());
     }
 
     function stake(uint tokenId_) public onlyEOA whenNotPaused {
@@ -99,18 +108,18 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
         }
     }
 
-    function pause() onlyOwner public {
+    function pause() onlyRole(DEFAULT_ADMIN_ROLE) public {
         _pause();
     }
 
-    function unpause() onlyOwner public {
+    function unpause() onlyRole(DEFAULT_ADMIN_ROLE) public {
         _unpause();
     }
 
     /*
      * @dev Pull out all balance of token or BNB in this contract. When tokenAddress_ is 0x0, will transfer all BNB to the admin owner.
      */
-    function pullFunds(address tokenAddress_) onlyOwner external {
+    function pullFunds(address tokenAddress_) onlyRole(DEFAULT_ADMIN_ROLE) external {
         if (tokenAddress_ == address(0)) {
             payable(_msgSender()).transfer(address(this).balance);
         } else {
@@ -119,7 +128,7 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
         }
     }
 
-    function pullNFTs(address tokenAddress, address receivedAddress, uint amount) onlyOwner external {
+    function pullNFTs(address tokenAddress, address receivedAddress, uint amount) onlyRole(DEFAULT_ADMIN_ROLE) external {
         require(receivedAddress != address(0));
         require(tokenAddress != address(0));
         require(tokenAddress != address(nftToken), "Pulling staked NFT tokens are not allowed");
@@ -133,11 +142,25 @@ contract DefinaNFTMaster is Initializable, OwnableUpgradeable, PausableUpgradeab
         }
     }
 
-    function changeTokenAddress(IERC721EnumerableUpgradeable nft_) onlyOwner external {
+    // function burnNFTs(uint[] calldata tokenIds_) onlyRole(ADMIN_ROLE) external {
+    //     for (uint i = 0; i < tokenIds_.length; i++) {
+    //         uint tokenId_ = tokenIds_[i];
+    //         require(nftToken.ownerOf(tokenId_) == address(this), "tokenId is not owned by the contract");
+    //         require(stakeMap.contains(tokenId_), "tokenId was not staked");
+    //         tokensByAddr[stakeMap.get(tokenId_)].remove(tokenId_);
+    //         stakeMap.remove(tokenId_);
+    //         delete tokenByTimestamp[tokenId_];
+    //         IDefinaCard definaCard = IDefinaCard(address(nftToken));
+    //         definaCard.burn(tokenId_);
+    //         emit NFTBurned(address(definaCard), tokenId_);
+    //     }
+    // }
+
+    function changeTokenAddress(IERC721EnumerableUpgradeable nft_) onlyRole(DEFAULT_ADMIN_ROLE) external {
         nftToken = nft_;
     }
 
-    function changeLockTime(uint seconds_) onlyOwner external {
+    function changeLockTime(uint seconds_) onlyRole(DEFAULT_ADMIN_ROLE) external {
         lockTime = seconds_;
     }
 }
