@@ -103,6 +103,14 @@ contract FocLockFarming is Initializable, OwnableUpgradeable, PausableUpgradeabl
         LPPoolInfo storage lpPool = lpPoolInfo[_pid];
         UserLPInfo storage user = userLPInfo[_pid][_msgSender()];
         updateLPPool(_pid);
+        //send pending reward first
+        uint pending = pendingLPRewardByTier(_pid,_msgSender());
+        if(pending > 0){
+            focToken.mint(_msgSender(), pending);
+            focToken.mint(devAddr, pending/20);
+            emit Rewards(_msgSender(), _pid, pending);
+        }
+
         if (user.amount > 0) {
             //use weight(amount) averaged time
             user.averageDepositedTime =
@@ -187,15 +195,9 @@ contract FocLockFarming is Initializable, OwnableUpgradeable, PausableUpgradeabl
         UserLPInfo storage user = userLPInfo[_pid][_msgSender()];
         require(user.amount >= _amount, "withdraw amount overflow");
         updateLPPool(_pid);
-        uint pending = pendingLPReward(_pid,_msgSender());
+        uint pending = pendingLPRewardByTier(_pid,_msgSender());
 
         if(pending > 0){
-            for(uint i = depositTier.length - 1; i >= 0 ; i--) {
-                if(block.timestamp>= user.averageDepositedTime + depositTier[i]){
-                    pending = pending * rewardRatioByTier[i] / 10000;
-                    break;
-                } 
-            }
             focToken.mint(_msgSender(), pending);
             focToken.mint(devAddr, pending/20);
             emit Rewards(_msgSender(), _pid, pending);

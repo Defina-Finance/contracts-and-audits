@@ -33,6 +33,15 @@ contract FinaLockFarming is Initializable, OwnableUpgradeable, FinaFarming {
         LPPoolInfo storage lpPool = lpPoolInfo[_pid];
         UserLPInfo storage user = userLPInfo[_pid][_msgSender()];
         updateLPPool(_pid);
+        //send pending reward first
+        uint[] memory p = pendingLPRewardByTier(_pid,_msgSender());
+        uint pending = p[0];
+        if(pending > 0){
+            finaToken.safeTransfer(_msgSender(), p[0]);
+            secondRewardToken.safeTransfer(_msgSender(), p[1]);
+            emit Rewards(_msgSender(), _pid, p[0], p[1]);
+        }
+
         if (user.amount > 0) {
             //use weight(amount) averaged time
             user.averageDepositedTime =

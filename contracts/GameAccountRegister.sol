@@ -5,14 +5,18 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 
 contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeable {
     
     using AddressUpgradeable for address;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+
     mapping (address => bytes32) private accounts;
     mapping (address => bytes32) private delegatedAccounts;
     mapping (bytes32 => address) private emails;
     mapping (bytes32 => address) private delegatedEmails;
+    EnumerableSetUpgradeable.AddressSet private accountsSet;
 
     event Binding(address indexed user, bytes32 account);
     event UnBinding(address indexed user);
@@ -41,6 +45,9 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
         require(delegatedEmails[emailHash] == address(0), "The email has already been registered as delegated account");
         accounts[_msgSender()] = emailHash;
         emails[emailHash] = _msgSender();
+
+        accountsSet.add(_msgSender());
+
         emit Binding(_msgSender(), emailHash);
     }
 
@@ -68,7 +75,7 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
         emit UnDelegated(_msgSender(), emailHash);
     }
 
-    function removeAccount(address account_) onlyRole(ADMIN_ROLE) external {
+    function _removeAccount(address account_)  internal {
         bytes32 emailHash = accounts[account_];
         if (emailHash != 0) {
             delete accounts[account_];
@@ -79,7 +86,21 @@ contract GameAccountRegister is Initializable, AccessControlEnumerableUpgradeabl
             delete delegatedAccounts[account_];
             delete delegatedEmails[delegatedEmailHash];
         }
+
+        accountsSet.remove(account_);
+
         emit UnBinding(account_);
+    }
+
+    function removeAccount(address account_) onlyRole(ADMIN_ROLE) external {
+        _removeAccount(account_);
+    }
+
+    function removeAllAccounts() onlyRole(ADMIN_ROLE) external {
+        uint length = accountsSet.length();
+        for (uint i = 0; i < length; i++) {
+            _removeAccount(accountsSet.at(0));
+        }
     }
 
     function getDelegatedEmailHash(address account_) external view returns(bytes32) {
