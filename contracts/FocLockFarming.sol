@@ -9,9 +9,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 interface FocToken {
-    function mint(address to, uint256 amount) external returns (bool);
-    function transfer(address recipient, uint256 amount) external returns (bool);
-    function transferOwnership(address to) external returns (bool);
+    function mint(address to, uint256 amount) external;
+    function transferOwnership(address to) external;
 }
 
 contract FocLockFarming is Initializable, OwnableUpgradeable, PausableUpgradeable {
