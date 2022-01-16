@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IRandomConsumer {
     function runFulfillRandomness(uint256 tokenId_, address user_, uint256 randomness_) external;
@@ -54,6 +55,18 @@ contract RandomGenerator is AccessControlEnumerable, VRFConsumerBase {
         _consumer.runFulfillRandomness(_request.tokenId, _request.user, randomness_);
 
         delete _requestIdToRequest[requestId_];
+    }
+
+    /*
+     * @dev Pull out all balance of token or BNB in this contract. When tokenAddress_ is 0x0, will transfer all BNB to the admin owner.
+     */
+    function pullFunds(address tokenAddress_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (tokenAddress_ == address(0)) {
+            payable(_msgSender()).transfer(address(this).balance);
+        } else {
+            IERC20 token = IERC20(tokenAddress_);
+            token.transfer(_msgSender(), token.balanceOf(address(this)));
+        }
     }
 
 }
